@@ -28,22 +28,7 @@ servo_sweep_scan:
 ############################################################
 """
 scoring function: 
-
-best_angle = 0
-    best_score = -1
-    for angle, left, right in measurements:
-        if left is None or right is None:
-            continue  # skip invalid readings
-        diff = abs(left - right)
-        score = left + right - PENALTY_FACTOR * diff
-        print(f"Angle {angle}: left {left:.1f} cm, right {right:.1f} cm, diff {diff:.1f}, score {score:.1f}")
-        if score > best_score:
-            best_score = score
-            best_angle = angle
-    
-    print("All sweep measurements:", measurements)
-    print("Best angle chosen:", best_angle, "with score:", best_score)
-    return best_angle
+score = left + right - PENALTY_FACTOR * abs(left - right)
 """
 ############################################################
 
@@ -84,9 +69,11 @@ try:
 except Exception as e:
     print("Failed to open serial port:", e)
     exit()
-#################################################
-#                  FUNCTIONS
-#################################################
+
+
+############################################################
+#                      FUNCTIONS
+############################################################
 
 # send command to Arduino
 def send_command(command):
@@ -116,7 +103,7 @@ def measure_distance(trig_pin, echo_pin):
         start_time = time.time()
         if start_time > timeout:
             return None
-        # wait for echo (falling edge
+        # wait for echo (falling edge)
     end_time = time.time()
     timeout = end_time + 0.04
     while GPIO.input(echo_pin) == 1:
@@ -140,7 +127,7 @@ def path_is_clear(left_dist, right_dist, threshold=CLEAR_DISTANCE):
         return False
     return (left_dist > threshold and right_dist > threshold)
 
-
+# big boy function
 def servo_sweep_scan():
     """
     - sweep by moving the sensors incrementally left and right
@@ -198,8 +185,7 @@ def servo_sweep_scan():
     
 
     
-    # 3 - SCORING FUNCTION
-    #     mr gpt wrote this i dont get it
+    # 3 - SCORING FUNCTION - mr gpt assisted
     #    Score = (left + right) - (penalty * abs(left - right))
     best_angle = 0
     best_score = -1
@@ -220,7 +206,7 @@ def servo_sweep_scan():
 def main():
     try:
         while True:
-            #drive forward
+            # drive forward
             send_command("driveF")
             time.sleep(1.0)  # drive forward for 1 second
             send_command("S")
