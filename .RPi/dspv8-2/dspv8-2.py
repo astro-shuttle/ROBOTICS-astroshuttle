@@ -1,3 +1,6 @@
+
+#8-2 is written for HMC5883L
+
 import RPi.GPIO as GPIO
 import time
 import serial
