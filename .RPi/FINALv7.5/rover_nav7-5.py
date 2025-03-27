@@ -1,6 +1,36 @@
 import RPi.GPIO as GPIO
 import time
 import serial
+############################################################
+"""
+MAIN LOOP 
+    1 drive forward
+    2 deploy an ultrasonic scan
+    3 pivot to best angle based on sweep
+    4 driveforward
+    5 loop 
+"""
+############################################################
+"""
+servo_sweep_scan:
+
+    - sweep by moving the sensors incrementally left and right
+    
+    - record both distance measurements at each step
+    
+    - center and evaluate which angle (measured in steps from center)
+    
+    - calculates the best reading (scoring function)
+    
+    returns:
+        best_angle (int)          #negative for left, positive for right, 0 for center.
+"""
+############################################################
+"""
+
+"""
+############################################################
+
 
 # GPIO PINS for ULTRASONIC
 TRIG_LEFT = 17
@@ -12,7 +42,7 @@ ECHO_RIGHT = 23
 SERIAL_PORT = '/dev/ttyUSB0'  # may change with lidar, etc.
 BAUD_RATE = 9600
 
-# DISTANCE THRESHOLD (for deciding if path is ìclearî)
+# DISTANCE THRESHOLD (for deciding if path is ‚Äúclear‚Äù)
 CLEAR_DISTANCE = 25.0
 
 # Sweep increments: more steps = finer search, but slower
@@ -63,7 +93,7 @@ def measure_distance(trig_pin, echo_pin):
     Measure distance (in cm) using an ultrasonic sensor.
     Returns the distance in cm or None on error.
     """
-    # Ensure trigger is low, then send a 10µs pulse.
+    # Ensure trigger is low, then send a 10¬µs pulse.
     GPIO.output(trig_pin, False)
     time.sleep(0.0002)
     GPIO.output(trig_pin, True)
@@ -110,57 +140,63 @@ def path_is_clear(left_dist, right_dist, threshold=CLEAR_DISTANCE):
 
 def servo_sweep_scan():
     """
-    Perform a sweep by moving the sensors (or pivoting the chassis) incrementally
-    left and right. Record the left and right distance measurements at each step.
-    Then return to center and evaluate which angle (measured in steps from center)
-    gives the best reading (high combined distance and balanced left/right values).
+    - sweep by moving the sensors incrementally left and right
+    
+    - record both distance measurements at each step
+    
+    - center and evaluate which angle (measured in steps from center)
+    
+    - calculates the best reading (high combined distance and balanced left/right values)
     
     Returns:
         best_angle (int): negative for left, positive for right, 0 for center.
     """
-    measurements = []  # List to store tuples: (angle, left, right)
+    measurements = []  # (angle, left, right)
     
-    # 0. Record center measurement (angle 0)
+    # 2-1 zero and get measurements
+    send_command("steerZ")
     left, right = get_ultrasonic_distances()
     measurements.append((0, left, right))
     print("Center measurement:", (0, left, right))
     time.sleep(0.2)
     
-    # 1. Sweep left from center
+    # 2-2 sweep and record turning Left
     for i in range(1, PIVOT_STEPS + 1):
-        send_command("pivotL")  # adjust sensor/rover left a small step
+        send_command("pivotL")  # turn L
         time.sleep(0.3)
         send_command("S")       # stop movement
         time.sleep(0.2)
-        left, right = get_ultrasonic_distances()
+        left, right = get_ultrasonic_distances() # calc distances
         measurements.append((-i, left, right))
-        print(f"Left sweep step {-i} measurement:", (left, right))
+        print(f"Left sweep step {-i} measurement:", (left, right)) 
     
-    # 2. Return to center from left sweep
-    for i in range(PIVOT_STEPS):
-        send_command("pivotR")
+    # 2-3 go to center/zero (from L)
+        send_command("steerZ")
         time.sleep(0.3)
         send_command("S")
         time.sleep(0.2)
     
-    # 3. Sweep right from center
+    # 2-4 sweep and record turning Right
     for i in range(1, PIVOT_STEPS + 1):
-        send_command("pivotR")
+        send_command("pivotR") #turn R
         time.sleep(0.3)
-        send_command("S")
+        send_command("S") 
         time.sleep(0.2)
         left, right = get_ultrasonic_distances()
         measurements.append((i, left, right))
         print(f"Right sweep step {i} measurement:", (left, right))
     
-    # 4. Return to center from right sweep
+    # 2-5 go to center/zero (from R)
     for i in range(PIVOT_STEPS):
         send_command("pivotL")
         time.sleep(0.3)
         send_command("S")
         time.sleep(0.2)
     
-    # 5. Evaluate all measurements using a scoring function.
+
+    
+    # 3 - SCORING FUNCTION
+    #     mr gpt wrote this i dont get it
     #    Score = (left + right) - (penalty * abs(left - right))
     best_angle = 0
     best_score = -1
@@ -177,30 +213,22 @@ def servo_sweep_scan():
     print("All sweep measurements:", measurements)
     print("Best angle chosen:", best_angle, "with score:", best_score)
     return best_angle
-
+#MAIN LOOP
 def main():
-    """
-    Main loop:
-    1. Drive forward briefly.
-    2. Stop and perform a servo (or chassis pivot) sweep scan.
-    3. Pivot to the best angle based on the sweep.
-    4. Drive forward again.
-    """
     try:
         while True:
-            # Drive forward for a short burst
-            print("Driving forward...")
+            #drive forward
             send_command("driveF")
             time.sleep(1.0)  # drive forward for 1 second
             send_command("S")
             read_response()
             time.sleep(0.5)
             
-            # Perform sweep scan
+            # sweep scan
             print("Performing servo sweep scan...")
             best_angle = servo_sweep_scan()
             
-            # Pivot to the chosen best angle
+            # go to best angle
             if best_angle < 0:
                 print(f"Pivoting left {abs(best_angle)} step(s) to align.")
                 for i in range(abs(best_angle)):
@@ -218,8 +246,7 @@ def main():
             else:
                 print("Best angle is center; no pivot needed.")
             
-            # Drive forward again after aligning
-            print("Driving forward after alignment...")
+            # drive forward again after pivot sequence
             send_command("driveF")
             time.sleep(1.0)
             send_command("S")
