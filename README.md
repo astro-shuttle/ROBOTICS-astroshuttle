@@ -20,7 +20,7 @@
 
 ## Project Overview
 
-**ROVR: Oberon** is an autonomously navigating Martian rover developed for the COSGC Robotics Challenge 2024-2025. The project demonstrates innovative, odom-free navigation by integrating LiDAR-based SLAM with goal-based navigation using ROS 2 Humble. With a combination of ultrasonic sensors for local obstacle detection and LiDAR for mapping and localization, the rover is designed to autonomously explore and navigate complex environments. An Arduino handles direct motor control via a universal serial command protocol, while a Raspberry Pi runs high-level navigation and SLAM software.
+**ROVR: Oberon** is an autonomously navigating Martian rover developed for the COSGC Robotics Challenge 2024-2025. Developed with TEAM AXIOM @ ACC.
 
 ---
 
