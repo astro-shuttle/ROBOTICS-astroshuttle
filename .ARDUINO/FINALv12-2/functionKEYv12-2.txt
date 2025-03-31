@@ -1,0 +1,16 @@
+steerL [ANGLE] – servo turn left to angle
+steerR [ANGLE] – servo turn right to angle
+steerL - servo turn to default angle
+steer - servo turn to default angle
+steerZ - zero the servos
+
+driveF – drive forward
+driveB – drive backward
+DdriveL –  servo-based turn left (with differential drive)
+DdriveR – servo-based turn right (with differential drive)
+
+skidL – skid steer left (in-place turn) [DC only]
+skidR – skid steer right (in-place turn) [DC only]
+
+S - stop motors 
+C - show commands
